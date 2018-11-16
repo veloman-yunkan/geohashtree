@@ -12,8 +12,6 @@ import (
 	"strings"
 )
 
-var Increment = 2 // change this if you want the increment to increase
-
 // creates a string that can be appended to a csv file
 func CleanOutput(outputgeohashs []string, idstring string, minval int) string {
 	// creating stringlist
@@ -100,25 +98,11 @@ func IndexFromGeoJSON(filename string, outfilename string, minp, maxp int, geojs
 	if err != nil {
 		return err
 	}
-	current := 0
-	for current < len(fc.Features) {
-		nextcurrent := current + Increment
-		if nextcurrent > len(fc.Features) {
-			nextcurrent = len(fc.Features)
-		}
-		c := make(chan string, nextcurrent-current)
-		for _, feature := range fc.Features[current:nextcurrent] {
-			go func(feature *geojson.Feature, c chan string) {
-				c <- output.AddFeature(feature, geojsonfield)
-			}(feature, c)
-		}
-		for i := current; i < nextcurrent; i++ {
-			val := <-c
-			output.File.WriteString(val)
-		}
-		current = nextcurrent
-		fmt.Printf("\r[%d/%d] of features written to output csv.", current, len(fc.Features))
-	}
+    for i, feature := range fc.Features {
+        val := output.AddFeature(feature, geojsonfield)
+        output.File.WriteString(val)
+		fmt.Printf("\r[%d/%d] of features written to output csv.", i+1, len(fc.Features))
+    }
 	fmt.Printf("\nFinished making output csv: %s\n", outfilename)
 	return err
 }

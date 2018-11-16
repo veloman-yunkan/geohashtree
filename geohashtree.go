@@ -207,9 +207,6 @@ func (polygon Poly) HardPip(geohash string) int {
 
 // drills a single geohash to the maximum precision
 func (poly *Poly) DrillGeohash(geohash string, newlist []string) []string {
-	// creating channel
-	c := make(chan []string)
-
 	// checking to see if the geohash starting is within the polygon
 	// covering a corner case
 	if poly.Min == len(geohash) {
@@ -219,29 +216,17 @@ func (poly *Poly) DrillGeohash(geohash string, newlist []string) []string {
 		}
 	}
 
-	// iterating through expanded geohash
-	for _, newgeohash := range ExpandGeohash(geohash) {
-		if len(newgeohash) <= poly.Max {
+    if len(geohash) < poly.Max {
+        // iterating through expanded geohash
+        for _, newgeohash := range ExpandGeohash(geohash) {
 			hardpip := poly.HardPip(newgeohash)
-			go func(newgeohash string, hardpip int, c chan []string) {
-				if hardpip == 1 {
-					c <- []string{newgeohash}
-				} else if hardpip == 2 {
-					c <- poly.DrillGeohash(newgeohash, []string{})
-				} else {
-					c <- []string{}
-				}
-			}(newgeohash, hardpip, c)
-		} else {
-			go func(c chan []string) {
-				c <- []string{}
-			}(c)
-		}
-	}
-
-	for count := 0; count < 32; count++ {
-		newlist = append(newlist, <-c...)
-	}
+            if hardpip == 1 {
+                newlist = append(newlist, newgeohash)
+            } else if hardpip == 2 {
+                newlist = poly.DrillGeohash(newgeohash, newlist)
+            }
+        }
+    }
 
 	return newlist
 }
