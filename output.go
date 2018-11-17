@@ -5,11 +5,12 @@ This files handles abstracting the core function geohashtree.go uses.
 */
 
 import (
-	"fmt"
-	"github.com/paulmach/go.geojson"
-	"io/ioutil"
-	"os"
-	"strings"
+    "fmt"
+    "os"
+    "strings"
+    "encoding/json"
+    "github.com/bcicen/jstream"
+    "github.com/paulmach/go.geojson"
 )
 
 // creates a string that can be appended to a csv file
@@ -84,25 +85,39 @@ func (output *IndexOutput) AddFeature(feature *geojson.Feature, field string) st
 
 // creates an index from geojson and dumps it into a csv
 func IndexFromGeoJSON(filename string, outfilename string, minp, maxp int, geojsonfield string) error {
-	bs, err := ioutil.ReadFile(filename)
+    infile, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 
-	fc, err := geojson.UnmarshalFeatureCollection(bs)
-	if err != nil {
-		return err
-	}
-
+    defer infile.Close()
+	decoder := jstream.NewDecoder(infile, 2)
 	output, err := CreateCSV(outfilename, minp, maxp)
 	if err != nil {
 		return err
 	}
-    for i, feature := range fc.Features {
+
+    i := 0
+	for mv := range decoder.Stream() {
+        bs, err := json.Marshal(mv.Value)
+        if err != nil {
+            return err
+        }
+        feature, err := geojson.UnmarshalFeature(bs)
+        if err != nil {
+            return err
+        }
+
         val := output.AddFeature(feature, geojsonfield)
         output.File.WriteString(val)
-		fmt.Printf("\r[%d/%d] of features written to output csv.", i+1, len(fc.Features))
-    }
+        i++
+        fmt.Printf("%d features written to output csv.\n", i)
+	}
+
+	if err := decoder.Err(); err != nil {
+		return err
+	}
+
 	fmt.Printf("\nFinished making output csv: %s\n", outfilename)
 	return err
 }
