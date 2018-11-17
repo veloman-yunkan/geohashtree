@@ -83,6 +83,15 @@ func (output *IndexOutput) AddFeature(feature *geojson.Feature, field string) st
 	return ""
 }
 
+func isfeature(mv *jstream.MetaValue) bool {
+    switch mv.Value.(type) {
+        case map[string]interface{}: {
+            return true
+        }
+    }
+    return false
+}
+
 // creates an index from geojson and dumps it into a csv
 func IndexFromGeoJSON(filename string, outfilename string, minp, maxp int, geojsonfield string) error {
     infile, err := os.Open(filename)
@@ -99,19 +108,21 @@ func IndexFromGeoJSON(filename string, outfilename string, minp, maxp int, geojs
 
     i := 0
 	for mv := range decoder.Stream() {
-        bs, err := json.Marshal(mv.Value)
-        if err != nil {
-            return err
-        }
-        feature, err := geojson.UnmarshalFeature(bs)
-        if err != nil {
-            return err
-        }
+        if isfeature(mv) {
+            bs, err := json.Marshal(mv.Value)
+            if err != nil {
+                return err
+            }
+            feature, err := geojson.UnmarshalFeature(bs)
+            if err != nil {
+                return err
+            }
 
-        val := output.AddFeature(feature, geojsonfield)
-        output.File.WriteString(val)
-        i++
-        fmt.Printf("%d features written to output csv.\n", i)
+            val := output.AddFeature(feature, geojsonfield)
+            output.File.WriteString(val)
+            i++
+            fmt.Printf("%d features written to output csv.\n", i)
+        }
 	}
 
 	if err := decoder.Err(); err != nil {
