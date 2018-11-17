@@ -1,29 +1,50 @@
 package main
 
 import (
+    "flag"
     "fmt"
     "os"
-    "strconv"
     "../.."
 )
 
+var (
+	mingeohashlength   = flag.Int("geohash-min-length", 5,
+                                  "minimal length of geohashes")
+	maxgeohashlength   = flag.Int("geohash-max-length", 9,
+                                  "maximal length of geohashes")
+	feature_prop_name  = flag.String("feature-prop-name", "id",
+                                     "feature property name serving as its id")
+	helpFlag    = flag.Bool("h", false, "display this help dialog")
+)
+
+var helpMsg = `make_geojson_index - build geohashtree index for GeoJSON input
+
+Usage:
+
+    make_geojson_index [options] <input_geojson_file> <output_csv_file>
+
+Options:
+`
+
+func help() {
+	fmt.Println(helpMsg)
+    flag.PrintDefaults()
+}
+
 func run() error {
-    geojsonfile := os.Args[1]
-    outputfile := os.Args[2]
-    mingeohashlength, err := strconv.Atoi(os.Args[3])
-    if err != nil {
-        return err
-    }
-    maxgeohashlength, err := strconv.Atoi(os.Args[4])
-    if err != nil {
-        return err
-    }
-    propname := os.Args[5]
+    flag.Parse()
+	if *helpFlag {
+		help()
+		os.Exit(0)
+	}
+
+    geojsonfile := flag.Arg(0)
+    outputfile := flag.Arg(1)
     return geohashtree.IndexFromGeoJSON(geojsonfile,
                                         outputfile,
-                                        mingeohashlength,
-                                        maxgeohashlength,
-                                        propname)
+                                        *mingeohashlength,
+                                        *maxgeohashlength,
+                                        *feature_prop_name)
 }
 
 func main() {
