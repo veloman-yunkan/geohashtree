@@ -6,6 +6,7 @@ import (
     "os"
     "net/http"
     "strconv"
+//    "log"
 //    "time"
     "../.."
 )
@@ -31,7 +32,11 @@ func help() {
 
 var tree *geohashtree.GeohashTree = nil;
 
-func handleRequest(w http.ResponseWriter, r *http.Request) {
+func handleHealthCheckRequest(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "OK", )
+}
+
+func handleQueryRequest(w http.ResponseWriter, r *http.Request) {
     lon_header := r.Header["Lon"]
     if len(lon_header) == 0 {
         http.Error(w, "Longitude value not provided", 400)
@@ -54,9 +59,12 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Invalid lattitude: " + latstr, 400)
         return
     }
-    geohash, ok := tree.Query([]float64{lon, lat})
+    location := []float64{lon, lat}
+//    geohash := geohashtree.Geohash(location, 9)
+//    log.Printf("Lat: %s, Lon: %s, Geohash: %s", latstr, lonstr, geohash)
+    feature, ok := tree.Query(location)
     if ok {
-        fmt.Fprintf(w, `[ "%s" ]`, geohash)
+        fmt.Fprintf(w, `[ "%s" ]`, feature)
     } else {
         fmt.Fprintf(w, "[]", )
     }
@@ -78,12 +86,13 @@ func run() error {
 
 //    s := &http.Server{
 //        Addr:           ":" + strconv.Itoa(*port),
-//        Handler:        handleRequest,
+//        Handler:        handleQueryRequest,
 //        ReadTimeout:    1 * time.Second,
 //        WriteTimeout:   1 * time.Second,
 //        MaxHeaderBytes: 1 << 10,
 //    }
-    http.HandleFunc("/", handleRequest)
+    http.HandleFunc("/query", handleQueryRequest)
+    http.HandleFunc("/", handleHealthCheckRequest)
     return http.ListenAndServe(":" + strconv.Itoa(*port), nil);
 }
 
