@@ -8,13 +8,13 @@ import (
 )
 
 var (
-	mingeohashlength   = flag.Int("geohash-min-length", 5,
+    mingeohashlength   = flag.Int("geohash-min-length", 5,
                                   "minimal length of geohashes")
-	maxgeohashlength   = flag.Int("geohash-max-length", 9,
+    maxgeohashlength   = flag.Int("geohash-max-length", 9,
                                   "maximal length of geohashes")
-	feature_prop_name  = flag.String("feature-prop-name", "id",
+    feature_prop_name  = flag.String("feature-prop-name", "id",
                                      "feature property name serving as its id")
-	helpFlag    = flag.Bool("h", false, "display this help dialog")
+    helpFlag    = flag.Bool("h", false, "display this help dialog")
 )
 
 var helpMsg = `make_geojson_index - build geohashtree index for GeoJSON input
@@ -27,15 +27,15 @@ Options:
 `
 
 func help() {
-	fmt.Println(helpMsg)
+    fmt.Println(helpMsg)
     flag.PrintDefaults()
 }
 
 func run() error {
     flag.Parse()
-	if *helpFlag {
-		help()
-		os.Exit(0)
+	switch {
+    case *helpFlag:             help(); os.Exit(0);
+    case len(flag.Args()) != 2: help(); os.Exit(1);
 	}
 
     geojsonfile := flag.Arg(0)
